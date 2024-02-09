@@ -5,7 +5,3 @@ from ..services.passport import decode_token, create_jwt_token
 
 router = APIRouter()
 
-@router.get('/{room}')
-async def get_event_by_id(request: Request, room: str):
-    print(room)
-    return {}

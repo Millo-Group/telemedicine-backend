@@ -1,28 +1,53 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from typing import Union
+
+import string
+import random
+
 from ..dto.authanticate import Authenticate
 from ..services.passport import decode_token, create_jwt_token
+from ..services.jaas_jwt import JaaSJwtBuilder
+
+ 
 
 router = APIRouter()
+jwtBuilder = JaaSJwtBuilder()
 
 @router.post('/authenticate')
 async def authenticate(request: Request, item: Authenticate):
     odoo_service = request.state.odoo
     
-    partner = odoo_service.get_partner_by_id(item.customer_id, ['contact_name'])
-    employee = odoo_service.get_partner_by_id(item.employee_id, ['contact_name'])
-    event = odoo_service.get_event_by_id(item.event_id, ['message_partner_ids'])
+    partner, employee = None, None
+
+    if(item.customer_id):
+        partner = odoo_service.get_partner_by_id(item.customer_id, ['name', 'email'])
+    if(item.employee_id):
+        employee = odoo_service.get_partner_by_id(item.employee_id, ['name', 'email'])
+    
+    event = odoo_service.get_event_by_id(item.event_id, ['message_partner_ids', 'name'])
 
     partner_ids = event['message_partner_ids']
+    room_name = event['name'].replace(' ', '').lower() or ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
 
-    if(partner is None or employee is None or item.customer_id not in partner_ids or item.employee_id not in partner_ids):
+    isNotUser = partner is None and employee is None
+    id = item.customer_id or item.employee_id
+
+    isEmployee = employee is not None
+
+    if(isNotUser or id not in partner_ids):
         raise HTTPException(
             status_code=401,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {'token': create_jwt_token({'employee': employee, 'partner': partner })}
+    
+    user = employee or partner
+    token = create_jwt_token({'user': user})
 
+    jitsi_jwt = jwtBuilder.get_token(user['email'], user['name'], room_name, isEmployee)
+
+    return {'token': token, 'jitsi_jwt': jitsi_jwt, 'room_name': room_name}
+# get employees
 @router.get('/employees')
 async def get_employees(request: Request, skip:  Union[int, None] = None, limit: Union[int, None] = None, current_user: dict = Depends(decode_token)):
     odoo_service = request.state.odoo
