@@ -1,1 +1,7 @@
 .env
+auth.pk
+auth.pub
+cert.pem
+jaasauth.key
+jaasauth.key.pub
+key.pem
