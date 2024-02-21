@@ -5,3 +5,4 @@ cert.pem
 jaasauth.key
 jaasauth.key.pub
 key.pem
+google-config.json
