@@ -1,0 +1,31 @@
+.root {
+  width: 275px;
+  background-color: white;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  padding: 13px;
+}
+.chat_list::-webkit-scrollbar {
+  display: none;
+}
+.chat_list {
+  display: flex;
+  row-gap: 16px;
+  overflow: auto;
+  max-height: 300px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  padding: 13px 0;
+  min-height: 300px;
+  flex-direction: column-reverse;
+  overflow-anchor: auto !important;
+}
+.footer {
+  border-top: 1px solid #eaddff;
+  padding-top: 13px;
+}
+.chat_end {
+  margin-top: auto;
+}

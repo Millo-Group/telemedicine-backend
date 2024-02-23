@@ -6,3 +6,4 @@ pydantic_settings
 python-dotenv
 python-jose
 authlib
+firebase-admin

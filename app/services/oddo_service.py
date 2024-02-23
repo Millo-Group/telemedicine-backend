@@ -15,11 +15,15 @@ class OdooService:
         self.models = ServerProxy(f"{url}/xmlrpc/2/object", allow_none=True)
 
     def authenticate(self):
-        if not (self.uid):
-            self.uid = self.common.authenticate(self.db, self.username, self.password, {})
-        if not (self.uid):
+        try: 
+            if not (self.uid):
+                self.uid = self.common.authenticate(self.db, self.username, self.password, {})
+            if not (self.uid):
+                raise ValueError("Authentication failed")
+            return bool(self.uid)
+        except Exception as e:
+            print(e)
             raise ValueError("Authentication failed")
-        return bool(self.uid)
 
 
     def get_partners(self, domain=None, fields=None, limit=None, offset = None):
