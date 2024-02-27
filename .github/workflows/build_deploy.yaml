@@ -47,7 +47,7 @@ jobs:
           key: ${{ secrets.KEY }}
           envs: PAT
           script: |
-            cd telemedicine_frontend
+            cd telemedicine-backend
             GIT_SSH_COMMAND='ssh -i ~/.ssh/telemedicinebend -o IdentitiesOnly=yes' git pull origin main
             echo $PAT | docker login ghcr.io -u ssaid --password-stdin
             docker compose pull
