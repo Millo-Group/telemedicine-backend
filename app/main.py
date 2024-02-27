@@ -22,6 +22,7 @@ def create_app():
     settings = Settings()
 
     # init database here
+    print('hello world :)')
     # db = init_db()
 
     odoo_service = OdooService(
