@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 # Command to run the Uvicorn server without SSL, for use behind Traefik or another reverse proxy
-CMD ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+CMD ["uvicorn", "run:main", "--host", "0.0.0.0", "--port", "5000"]
