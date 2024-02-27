@@ -3,12 +3,13 @@ version: '3.8'
 services:
   myapp:
     #image: myapp:latest # Use the appropriate image name/tag for your application
+    image: ghcr.io/millo-group/telemedicine-backend:main
     build: . # Optional: Use this if you want to build the image from a Dockerfile in the current directory
     ports:
       - "5000:5000" # Map the port from the container to the host, adjust if your app uses a different port
     environment:
       JWT_SECRET_KEY: "${JWT_SECRET_KEY:-xxx}"
       ODOO_API_KEY: "${ODOO_API_KEY:-xxx}"
-      DB_NAME: "{$DB_NAME:-xxx}"
+      DB_NAME: "${DB_NAME:-xxx}"
     volumes:
       - ./google-config.json:/usr/src/app/google-config.json
