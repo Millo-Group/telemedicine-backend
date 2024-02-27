@@ -1,0 +1,22 @@
+.root {
+  padding: 6px 14px;
+  border-radius: 10px;
+  max-width: 227px;
+  width: max-content;
+  font-size: 11px;
+  line-height: 12px;
+}
+
+.incoming {
+  background-color: #dfe7f6;
+  color: #000;
+  text-align: left;
+  border-bottom-left-radius: 0 !important;
+}
+.outgoing {
+  background-color: #6750a4;
+  color: #fff;
+  text-align: right;
+  margin-left: auto;
+  border-bottom-right-radius: 0 !important;
+}

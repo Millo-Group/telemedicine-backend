@@ -1,0 +1,28 @@
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 8px;
+}
+
+.input::-webkit-scrollbar {
+  display: none;
+}
+
+.input {
+  height: 44px;
+  outline: none;
+  border: none;
+  background-color: #eaddff;
+  padding: 10px;
+  border-radius: 10px;
+  resize: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  flex: 1;
+}
+.input::placeholder {
+  color: #000;
+  font-size: 11px;
+  line-height: 12px;
+}

@@ -1,0 +1,18 @@
+.button {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  outline: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  cursor: pointer;
+}
+.primary {
+  background-color: #00aff0;
+}
+.button:hover {
+  opacity: 0.9;
+}
