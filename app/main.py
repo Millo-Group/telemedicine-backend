@@ -22,7 +22,7 @@ def create_app():
     settings = Settings()
 
     # init database here
-    db = init_db()
+    # db = init_db()
 
     odoo_service = OdooService(
         url='https://infinityclinic.co',
@@ -37,15 +37,15 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
- 
+
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next):
-        request.state.db = db
+        # request.state.db = db
         request.state.odoo = odoo_service
         request.state.settings = settings
         response = await call_next(request)
         return response
-    
+
     # api routes
     api_app = FastAPI(title="apis")
     api_app.include_router(api.router)

@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "layout"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Deploy latest image
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          PAT: ${{ secrets.PAT }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.KEY }}
+          envs: PAT
+          script: |
+            cd telemedicine_frontend
+            GIT_SSH_COMMAND='ssh -i ~/.ssh/telemedicinebend -o IdentitiesOnly=yes' git pull origin main
+            echo $PAT | docker login ghcr.io -u ssaid --password-stdin
+            docker compose pull
+            docker compose up -d
