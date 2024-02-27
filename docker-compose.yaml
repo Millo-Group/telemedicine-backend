@@ -13,3 +13,9 @@ services:
       DB_NAME: "${DB_NAME:-xxx}"
     volumes:
       - ./google-config.json:/usr/src/app/google-config.json
+    networks:
+      inverseproxy_shared:
+
+networks:
+  inverseproxy_shared:
+    external: true
