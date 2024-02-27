@@ -1,23 +1,28 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from typing import Union
 from datetime import datetime, timedelta
+from pydantic import ValidationError
 
 import string
 import random
+import json
 
 from ..dto.authanticate import Authenticate
 from ..dto.iot import IOT_DTO
 from ..dto.report import Report_DTO
+from ..dto.request import Req_DTO
 
 from ..services.passport import decode_token, create_jwt_token
 from ..services.jaas_jwt import JaaSJwtBuilder
 from ..services.iot_service import IOTService
 from ..services.report_service import ReportService
+from ..services.crypto_service import CryptoService
 
 router = APIRouter()
 jwtBuilder = JaaSJwtBuilder()
 iotService = IOTService()
 reportService = ReportService()
+cryptoService = CryptoService()
 
 @router.post('/authenticate')
 async def authenticate(request: Request, item: Authenticate):
@@ -98,27 +103,36 @@ async def get_iot_data(request: Request, patient_id:int, current_user: dict = De
     return records
     
 @router.post('/iot')
-async def create_iot_data(request: Request, item: IOT_DTO, current_user: dict = Depends(decode_token(['employee']))):
+async def create_iot_data(request: Request, item: Req_DTO, current_user: dict = Depends(decode_token(['employee']))):
         try:
             db = request.state.db
+            data = item.dict()['data']
+            result = cryptoService.decryptDict(data)
+            IOT_DTO(**result)
             records = iotService.create(db, item.dict())
             return records
+        except ValidationError as e:
+             raise HTTPException(status_code=400,  detail=json.loads(e.json()))
         except Exception as e:
-            print(e)
-            return item
+            raise HTTPException(status_code=500)
 
 @router.get('/reports')
-async def get_report_data(request: Request, patient_id:int, current_user: dict = Depends(decode_token(['employee']))):
+async def get_report_data(request: Request, patient_id:int, current_user: dict = Depends(decode_token(['employee'])),):
     db = request.state.db
     records = reportService.readByPatientId(db, patient_id)
     return records
     
 @router.post('/reports')
-async def create_report_data(request: Request, item: Report_DTO, current_user: dict = Depends(decode_token(['employee']))):
+async def create_report_data(request: Request, item: Req_DTO, current_user: dict = Depends(decode_token(['employee']))):
         try:
             db = request.state.db
-            records = reportService.create(db, item.dict())
+            data = item.dict()['data']
+            result = cryptoService.decryptDict(data)
+            Report_DTO(**result)
+            records = reportService.create(db, result)
             return records
+        except ValidationError as e:
+            raise HTTPException(status_code=400,  detail=json.loads(e.json()))
         except Exception as e:
             print(e)
             return item
