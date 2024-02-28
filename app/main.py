@@ -23,7 +23,7 @@ def create_app():
 
     # init database here
     print('hello world :)')
-    # db = init_db()
+    db = init_db()
 
     odoo_service = OdooService(
         url='https://infinityclinic.co',
@@ -41,7 +41,7 @@ def create_app():
 
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next):
-        # request.state.db = db
+        request.state.db = db
         request.state.odoo = odoo_service
         request.state.settings = settings
         response = await call_next(request)
