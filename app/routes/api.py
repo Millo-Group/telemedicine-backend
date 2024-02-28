@@ -25,39 +25,48 @@ reportService = ReportService()
 cryptoService = CryptoService()
 
 @router.post('/authenticate')
-async def authenticate(request: Request, item: Authenticate):
-    odoo_service = request.state.odoo
-    
-    partner = None
-    employee = None
+async def authenticate(request: Request, item: Req_DTO):
+    try:
+        odoo_service = request.state.odoo
+        data = item.dict()['data']
+        result = cryptoService.decryptDict(data)
+        item = Authenticate(**result)
 
-    if(item.customer_id):
-        partner = odoo_service.get_partner_by_id(item.customer_id, ['name', 'email'])
-    if(item.employee_id):
-        employee = odoo_service.get_partner_by_id(item.employee_id, ['name', 'email'])
-    event = odoo_service.get_event_by_id(item.event_id, ['message_partner_ids', 'name'])
-    partner_ids = event['message_partner_ids']
-    room_name = event['name'].replace(' ', '').lower() or ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+        partner = None
+        employee = None
 
-    isNotUser = partner is None and employee is None
-    id = item.customer_id or item.employee_id
+        if(item.customer_id):
+            partner = odoo_service.get_partner_by_id(item.customer_id, ['name', 'email'])
+        if(item.employee_id):
+            employee = odoo_service.get_partner_by_id(item.employee_id, ['name', 'email'])
+        event = odoo_service.get_event_by_id(item.event_id, ['message_partner_ids', 'name'])
+        partner_ids = event['message_partner_ids']
+        room_name = event['name'].replace(' ', '').lower() or ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
 
-    isEmployee = employee is not None
-    
+        isNotUser = partner is None and employee is None
+        id = item.customer_id or item.employee_id
 
-    if(isNotUser or id not in partner_ids):
-        raise HTTPException(
-            status_code=401,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    user = employee or partner
-    token = create_jwt_token({'user': user})
+        isEmployee = employee is not None
+        
 
-    jitsi_jwt = jwtBuilder.get_token(user['email'], user['name'], room_name, isEmployee)
+        if(isNotUser or id not in partner_ids):
+            raise HTTPException(
+                status_code=401,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        user = employee or partner
+        token = create_jwt_token({'user': user})
 
-    return {'token': token, 'jitsi_jwt': jitsi_jwt, 'room_name': room_name}
+        jitsi_jwt = jwtBuilder.get_token(user['email'], user['name'], room_name, isEmployee)
+
+        return {'token': token, 'jitsi_jwt': jitsi_jwt, 'room_name': room_name}
+    except ValidationError as e:
+        raise HTTPException(status_code=400,  detail=json.loads(e.json()))
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500)
 # get employees
 @router.get('/employees')
 async def get_employees(request: Request, skip:  Union[int, None] = None, limit: Union[int, None] = None, current_user: dict = Depends(decode_token(['employee']))):
@@ -73,7 +82,6 @@ async def get_employee_by_id(request: Request, id: int, skip:  Union[int, None] 
 
 @router.get('/partners')
 async def get_partners(request: Request, skip:  Union[int, None] = None, limit: Union[int, None] = None, current_user: dict = Depends(decode_token(['employee']))):
-    print(current_user)
     odoo_service = request.state.odoo
     records = odoo_service.get_partners(None, None, limit, skip)
     return records
@@ -109,7 +117,7 @@ async def create_iot_data(request: Request, item: Req_DTO, current_user: dict = 
             data = item.dict()['data']
             result = cryptoService.decryptDict(data)
             IOT_DTO(**result)
-            records = iotService.create(db, item.dict())
+            records = iotService.create(db, result)
             return records
         except ValidationError as e:
              raise HTTPException(status_code=400,  detail=json.loads(e.json()))
@@ -132,10 +140,10 @@ async def create_report_data(request: Request, item: Req_DTO, current_user: dict
             records = reportService.create(db, result)
             return records
         except ValidationError as e:
-            raise HTTPException(status_code=400,  detail=json.loads(e.json()))
+             raise HTTPException(status_code=400,  detail=json.loads(e.json()))
         except Exception as e:
             print(e)
-            return item
+            raise HTTPException(status_code=500)
 
 @router.get('/doctor/appointments')
 async def get_appointments_data(request: Request, current_user: dict = Depends(decode_token(['employee']))):

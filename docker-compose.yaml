@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   myapp:
@@ -11,6 +11,7 @@ services:
       JWT_SECRET_KEY: "${JWT_SECRET_KEY:-xxx}"
       ODOO_API_KEY: "${ODOO_API_KEY:-xxx}"
       DB_NAME: "${DB_NAME:-xxx}"
+      CRYPTO_KEY: "${CRYPTO_KEY:-xxx}"
     volumes:
       - ./google-config.json:/usr/src/app/google-config.json
     networks:
