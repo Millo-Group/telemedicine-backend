@@ -16,6 +16,7 @@ services:
       - ./google-config.json:/usr/src/app/google-config.json
     networks:
       inverseproxy_shared:
+    restart: unless-stopped
 
 networks:
   inverseproxy_shared:
