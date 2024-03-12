@@ -38,7 +38,7 @@ async def authenticate(request: Request, item: Req_DTO):
         if(item.customer_id):
             partner = odoo_service.get_partner_by_id(item.customer_id, ['name', 'email'])
         if(item.employee_id):
-            employee = odoo_service.get_partner_by_id(item.employee_id, ['name', 'email'])
+            employee = odoo_service.get_partner_by_id(item.employee_id, ['name', 'email', 'employee_ids'])
         event = odoo_service.get_event_by_id(item.event_id, ['message_partner_ids', 'name'])
         partner_ids = event['message_partner_ids']
         room_name = event['name'].replace(' ', '').lower() or ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
@@ -157,7 +157,8 @@ async def get_appointments_data(request: Request, current_user: dict = Depends(d
     search_domain = [
         ('start', '>=', start_of_week.strftime('%Y-%m-%d 00:00:00')),
         ('start', '<=', end_of_week.strftime('%Y-%m-%d 23:59:59')),
-        ('videocall_location', '!=', False), ('partner_ids', 'in', doctor['id'])
+        # ('videocall_location', '!=', True), 
+        ('doctore_id', 'in', doctor['employee_ids'])
     ]
 
     events = odoo_service.get_events(search_domain, None)
