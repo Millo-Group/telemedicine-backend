@@ -156,8 +156,8 @@ async def get_appointments_data(request: Request, current_user: dict = Depends(d
 
     search_domain = [
         ('start', '>=', start_of_week.strftime('%Y-%m-%d 00:00:00')),
-        ('start', '<=', end_of_week.strftime('%Y-%m-%d 23:59:59')),
-        # ('videocall_location', '!=', True), 
+        ('start', '<=', end_of_week.strftime('%Y-%m-%d 23:59:59')), 
+        ('videocall_location', '!=', True), 
         ('doctore_id', 'in', doctor['employee_ids'])
     ]
 
