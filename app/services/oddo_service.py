@@ -4,6 +4,14 @@ from xmlrpc.client import ServerProxy
 from ..config import Settings
 
 class OdooService:
+
+    field_by_operation = {
+        'subjective': 'digital_data_subjective_speech_text',
+        'objective': 'digital_data_objective_speech_text',
+        'assessment': 'digital_data_assessment_speech_text',
+        'plan': 'digital_data_plan_speech_text'    
+    }
+
     def __init__(self, url, username, password):
         self.settings = Settings()
         self.url = url
@@ -131,3 +139,30 @@ class OdooService:
         if len(record) == 0:
             return
         return record[0]
+    
+    def get_event_details(self, domain=None, fields = None):
+            self.authenticate()
+            record = self.models.execute_kw(
+                self.db,
+                self.uid,
+                self.password, 
+                'visit.type.line',
+                'search_read', 
+                [domain or []], 
+                {'fields': fields or [], 'limit': 1}
+            )
+            if len(record) == 0:
+                return
+            return record[0]
+
+    def create_event_details(self, id: int, fields = None):
+                self.authenticate()
+                record = self.models.execute_kw(
+                    self.db,
+                    self.uid,
+                    self.password, 
+                    'visit.type.line',
+                    'write', 
+                    [[id], fields or {}],  
+                )
+                return record

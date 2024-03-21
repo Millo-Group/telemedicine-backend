@@ -9,6 +9,7 @@ import json
 
 from ..dto.authanticate import Authenticate
 from ..dto.iot import IOT_DTO
+from ..dto.event_details import Event_Details
 from ..dto.report import Report_DTO
 from ..dto.request import Req_DTO
 
@@ -35,19 +36,21 @@ async def authenticate(request: Request, item: Req_DTO):
         partner = None
         employee = None
 
+        event = odoo_service.get_event_by_id(item.event_id, ['name', 'patient_id', 'doctore_id'])
+        
         if(item.customer_id):
             partner = odoo_service.get_partner_by_id(item.customer_id, ['name', 'email'])
+            partner_ids = event['patient_id']
         if(item.employee_id):
-            employee = odoo_service.get_partner_by_id(item.employee_id, ['name', 'email', 'employee_ids'])
-        event = odoo_service.get_event_by_id(item.event_id, ['message_partner_ids', 'name'])
-        partner_ids = event['message_partner_ids']
+            employee = odoo_service.get_employee_by_id(item.employee_id, ['name', 'work_email', 'user_partner_id'])
+            partner_ids = event['doctore_id']
         room_name = event['name'].replace(' ', '').lower() or ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
 
         isNotUser = partner is None and employee is None
         id = item.customer_id or item.employee_id
 
         isEmployee = employee is not None
-        
+
 
         if(isNotUser or id not in partner_ids):
             raise HTTPException(
@@ -57,9 +60,12 @@ async def authenticate(request: Request, item: Req_DTO):
             )
         
         user = employee or partner
+
+        email =  user['work_email'] if isEmployee else  user['email']
+
         token = create_jwt_token({'user': user})
 
-        jitsi_jwt = jwtBuilder.get_token(user['email'], user['name'], room_name, isEmployee)
+        jitsi_jwt = jwtBuilder.get_token(email, user['name'], room_name, isEmployee)
 
         return {'token': token, 'jitsi_jwt': jitsi_jwt, 'room_name': room_name}
     except ValidationError as e:
@@ -104,6 +110,52 @@ async def get_event_by_id(request: Request, id: int, current_user: dict = Depend
     records = odoo_service.get_event_by_id(id)
     return records
 
+@router.get('/events/{id}/details')
+async def get_event_details(request: Request,id: int, current_user: dict = Depends(decode_token(['employee']))):
+    odoo_service = request.state.odoo
+    result = odoo_service.get_event_details([('cal_event_id', 'in', [id])])
+    return result
+
+@router.post('/events/{id}/details')
+async def create_event_details(id:int, request: Request,item: Req_DTO, current_user: dict = Depends(decode_token(['employee']))):
+    try:
+        odoo_service = request.state.odoo
+        data = item.dict()['data']
+        result = cryptoService.decryptDict(data)
+        Event_Details(**result)
+        type = result['type']
+        value = result['value']
+        eventDetails = odoo_service.get_event_details([('cal_event_id', 'in', [id])], ['id'])
+        if type in odoo_service.field_by_operation:
+            field = odoo_service.field_by_operation[type]
+            print({field: value})
+            result = odoo_service.create_event_details(eventDetails['id'], {field: value})
+            return result
+        else:
+             return False
+    except ValidationError as e:
+            raise HTTPException(status_code=400,  detail=json.loads(e.json()))
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500)
+    
+@router.delete('/events/{id}/details/{type}')
+async def create_event_details(id:int, type: str, request: Request, current_user: dict = Depends(decode_token(['employee']))):
+    try:
+        odoo_service = request.state.odoo
+        eventDetails = odoo_service.get_event_details([('cal_event_id', 'in', [id])], ['id'])
+        if type in odoo_service.field_by_operation:
+            field = odoo_service.field_by_operation[type]
+            result = odoo_service.create_event_details(eventDetails['id'], {field: ''})
+            return result
+        else:
+             return False
+    except ValidationError as e:
+            raise HTTPException(status_code=400,  detail=json.loads(e.json()))
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500)
+    
 @router.get('/iot')
 async def get_iot_data(request: Request, patient_id:int, current_user: dict = Depends(decode_token(['employee']))):
     db = request.state.db
@@ -156,9 +208,9 @@ async def get_appointments_data(request: Request, current_user: dict = Depends(d
 
     search_domain = [
         ('start', '>=', start_of_week.strftime('%Y-%m-%d 00:00:00')),
-        ('start', '<=', end_of_week.strftime('%Y-%m-%d 23:59:59')), 
-        ('videocall_location', '!=', True), 
-        ('doctore_id', 'in', doctor['employee_ids'])
+        ('start', '<=', end_of_week.strftime('%Y-%m-%d 23:59:59')),
+        ('visit_where', '=', 'telemedicine'),
+        ('doctore_id', 'in', [doctor['id']])
     ]
 
     events = odoo_service.get_events(search_domain, None)
